@@ -8,6 +8,11 @@
 
 For `2`, different strategies are possible. The simplest is to keep any unigene that shares any hash with the set of hashes from the reads.
 
+### Requirements
+
+- Python
+- [Jug](https://jug.rtfd.io/)
+- [NGLess](https://ngless.embl.de/)
 
 ### Data
 

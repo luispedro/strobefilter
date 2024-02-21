@@ -2,6 +2,11 @@ import os
 from os import path
 from jug import TaskGenerator
 
+import samples
+from preprocess import preprocess
+
+preprocess = TaskGenerator(preprocess)
+
 GMGCV1_HASH = 'fde21071406072134befbbf6aacca6c9e27604a0d3e4954c2dbc3ee4bfe9dbb5'
 GMGCV1_PATH = 'data/GMGC10.95nr.fna'
 GMGCV1_URL = 'http://gmgc.embl.de/downloads/v1.0/GMGC10.95nr.fna'
@@ -47,3 +52,5 @@ def get_gmgcv1():
 
 gmgc_v1 = get_gmgcv1()
 
+for p in samples.DOG_SAMPLES:
+    preprocess(samples.DOG_STUDY, p)

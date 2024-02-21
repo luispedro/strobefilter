@@ -1,0 +1,9 @@
+DOG_SAMPLES = '''
+SAMN06172495
+SAMN06172481
+SAMN06172523
+SAMN06172473
+'''
+
+DOG_SAMPLES = [ell.strip() for ell in DOG_SAMPLES.strip().split('\n')]
+DOG_STUDY = 'Coelho_dogs_2018'

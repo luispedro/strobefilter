@@ -1,0 +1,11 @@
+ngless "1.5"
+
+sample = load_fastq_directory(ARGV[1])
+
+preproc = preprocess(sample) using |r|:
+    r = substrim(r, min_quality=25)
+    if len(r) < 45:
+        discard
+
+write(preproc, ofile=ARGV[2], format_flags={interleaved})
+

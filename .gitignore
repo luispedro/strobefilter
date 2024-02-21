@@ -1,2 +1,4 @@
 jugfile.jugdata/
 __pycache__/
+*.ngl.output_ngless
+preproc/
