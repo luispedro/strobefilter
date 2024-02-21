@@ -54,15 +54,19 @@ def get_gmgcv1():
 
 gmgc_v1 = get_gmgcv1()
 
-ps = []
 results = {}
-for p in samples.DOG_SAMPLES:
-    pp = preprocess(samples.DOG_STUDY, p)
-    ps.append(pp)
+
+for study,ss in [
+        (samples.DOG_STUDY, samples.DOG_SAMPLES),
+        (samples.ZELLER_STUDY, samples.ZELLER_SAMPLES)]:
+    ps = []
+    for p in ss:
+        pp = preprocess(study, p)
+        ps.append(pp)
+        for st in ['strict']:
+            strobe = strobefilter_count([pp], gmgc_v1, strategy=st)
+            results[(p, st)] = strobe
     for st in ['strict']:
-        strobe = strobefilter_count([pp], strategy=st)
-        results[(p, st)] = strobe
-for st in ['strict']:
-    results['all', st] = strobefilter_count(ps, strategy=st)
+        results[study, st] = strobefilter_count(ps, gmgc_v1, strategy=st)
 
 

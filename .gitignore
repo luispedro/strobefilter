@@ -2,3 +2,6 @@ jugfile.jugdata/
 __pycache__/
 *.ngl.output_ngless
 preproc/
+data/
+Coelho_dogs_2018
+Zeller_CRC_2014
