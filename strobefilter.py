@@ -2,9 +2,9 @@ from fastaq import fastq_iter, fasta_iter
 import strobealign
 from collections import namedtuple
 
-FilterResults = namedtuple('FilterResults', ['nr_reads', 'nr_strobes', 'nr_unigenes'])
+FilterResults = namedtuple('FilterResults', ['nr_reads', 'nr_strobes', 'nr_unigenes', 'strategy'])
 
-def strobefilter_count(fqs, strategy='strict'):
+def strobefilter_count(fqs, ffile, strategy='strict'):
     if strategy != 'strict':
         raise ValueError('Only strict strategy is implemented')
     ip = strobealign.IndexParameters.from_read_length(100)
@@ -17,18 +17,21 @@ def strobefilter_count(fqs, strategy='strict'):
             rs = strobealign.randstrobes_query(seq, ip)
             seen.update([rs.hash for rs in rs])
 
-            if n_fq % 100_000 == 0:
+            if n_fq % 1_000_000 == 0 and n_fq < 10_000_000 or n_fq % 10_000_000 == 0:
                 print(f'{n_fq//1000/1000.}m reads, {len(seen)//10000/100.}m hashes')
 
     n = 0
     s = 0
+    s1 = 0
     for h, seq in fasta_iter(ffile):
         rs = strobealign.randstrobes_query(seq, ip)
         hs = set(rs.hash for rs in rs)
         n += 1
         has_any = bool(hs & seen)
         s += has_any
-        if n % 100_000 == 0:
-            print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected')
-    return FilterResults(n_fq, s, len(seen))
+        s1 += len(hs & seen) >= 2
+        if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
+            print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected, {s1/n:.5%} with > 1 hit')
+    return [FilterResults(n_fq, len(seen), s, 'strict')
+            ,FilterResults(n_fq, len(seen), s1, 'min2')]
 
