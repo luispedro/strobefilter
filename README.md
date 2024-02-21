@@ -8,3 +8,7 @@
 
 For `2`, different strategies are possible. The simplest is to keep any unigene that shares any hash with the set of hashes from the reads.
 
+
+### Data
+
+1. GMGCv1 (from ([Coelho et al., 2022](https://www.nature.com/articles/s41586-021-04233-4)). This can be is downloaded by `jugfile.py`
