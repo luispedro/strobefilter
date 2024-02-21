@@ -4,8 +4,10 @@ from jug import TaskGenerator
 
 import samples
 from preprocess import preprocess
+from strobefilter import strobefilter_count
 
 preprocess = TaskGenerator(preprocess)
+strobefilter_count = TaskGenerator(strobefilter_count)
 
 GMGCV1_HASH = 'fde21071406072134befbbf6aacca6c9e27604a0d3e4954c2dbc3ee4bfe9dbb5'
 GMGCV1_PATH = 'data/GMGC10.95nr.fna'
@@ -52,5 +54,15 @@ def get_gmgcv1():
 
 gmgc_v1 = get_gmgcv1()
 
+ps = []
+results = {}
 for p in samples.DOG_SAMPLES:
-    preprocess(samples.DOG_STUDY, p)
+    pp = preprocess(samples.DOG_STUDY, p)
+    ps.append(pp)
+    for st in ['strict']:
+        strobe = strobefilter_count([pp], strategy=st)
+        results[(p, st)] = strobe
+for st in ['strict']:
+    results['all', st] = strobefilter_count(ps, strategy=st)
+
+
