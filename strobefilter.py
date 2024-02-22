@@ -27,9 +27,9 @@ def strobefilter_count(fqs, ffile, strategy='strict'):
         rs = strobealign.randstrobes_query(seq, ip)
         hs = set(rs.hash for rs in rs)
         n += 1
-        has_any = bool(hs & seen)
-        s += has_any
-        s1 += len(hs & seen) >= 2
+        common = sum((h in seen) for h in hs)
+        s  += common > 0
+        s1 += common > 1
         if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
             print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected, {s1/n:.5%} with > 1 hit')
     return [FilterResults(n_fq, len(seen), s, 'strict')
