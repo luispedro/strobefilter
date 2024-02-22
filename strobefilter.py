@@ -29,20 +29,35 @@ def extract_strobes_to(fqs, ofile):
 
 def strobefilter_count(rmers, ffile, strategy='strict'):
     import numpy as np
-    if strategy != 'strict':
-        raise ValueError('Only strict strategy is implemented')
+    if strategy not in ['strict', 'packed']:
+        raise ValueError('Only strict and packed strategies are implemented')
     ip = strobealign.IndexParameters.from_read_length(100)
     seen = np.load(rmers, mmap_mode='r')
-    seen = set(seen)
+    if strategy == 'packed':
+        seen = seen.view(dtype=np.uint32).copy()
+        seen.sort()
+        packed = np.zeros(2**32, dtype=np.uint8)
+        packed[seen] = 1
+        del seen
+    else:
+        seen = set(seen)
 
     n = 0
     s = 0
     s1 = 0
     for h, seq in fasta_iter(ffile):
-        rs = strobealign.randstrobes_query(seq, ip)
-        hs = set(rs.hash for rs in rs)
         n += 1
-        common = sum((h in seen) for h in hs)
+        rs = strobealign.randstrobes_query(seq, ip)
+        hs = set(r.hash for r in rs)
+        if strategy == 'packed':
+            hs = np.array(list(hs), dtype=np.uint64)
+            common = np.sum(
+                        packed[
+                            hs.view(dtype=np.uint32).reshape((-1, 2))
+                            ].sum(1)
+                        ==2)
+        else:
+            common = sum((h in seen) for h in hs)
         s  += common > 0
         s1 += common > 1
         if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:

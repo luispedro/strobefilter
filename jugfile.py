@@ -69,8 +69,8 @@ for study,ss in [
     for p in ss:
         pp = preprocess(study, p)
         ps.append(pp)
-        for st in ['strict']:
-            pp = extract_strobes_to([pp], Tasklet(pp, pp_strobe))
+        pp = extract_strobes_to([pp], Tasklet(pp, pp_strobe))
+        for st in ['strict', 'packed']:
             strobe = strobefilter_count(pp, gmgc_v1, strategy=st)
             results[(p, st)] = strobe
     #for st in ['strict']:
