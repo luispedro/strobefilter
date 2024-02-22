@@ -2,7 +2,7 @@ from fastaq import fastq_iter, fasta_iter
 import strobealign
 from collections import namedtuple
 
-FilterResults = namedtuple('FilterResults', ['nr_reads', 'nr_strobes', 'nr_unigenes', 'strategy'])
+FilterResults = namedtuple('FilterResults', ['nr_unigenes_kept', 'strategy'])
 
 def extract_strobes(fqs, ip):
     seen = set()
@@ -47,6 +47,6 @@ def strobefilter_count(rmers, ffile, strategy='strict'):
         s1 += common > 1
         if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
             print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected, {s1/n:.5%} with > 1 hit')
-    return [FilterResults(n_fq, len(seen), s, 'strict')
-            ,FilterResults(n_fq, len(seen), s1, 'min2')]
+    return [FilterResults(s, 'strict')
+            ,FilterResults(s1, 'min2')]
 
