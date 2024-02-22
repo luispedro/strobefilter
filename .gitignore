@@ -3,5 +3,6 @@ __pycache__/
 *.ngl.output_ngless
 preproc/
 data/
+strobes/
 Coelho_dogs_2018
 Zeller_CRC_2014

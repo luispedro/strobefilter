@@ -1,13 +1,14 @@
 import os
 from os import path
-from jug import TaskGenerator
+from jug import TaskGenerator, Tasklet
 
 import samples
 from preprocess import preprocess
-from strobefilter import strobefilter_count
+from strobefilter import strobefilter_count, extract_strobes_to
 
 preprocess = TaskGenerator(preprocess)
 strobefilter_count = TaskGenerator(strobefilter_count)
+extract_strobes_to = TaskGenerator(extract_strobes_to)
 
 GMGCV1_HASH = 'fde21071406072134befbbf6aacca6c9e27604a0d3e4954c2dbc3ee4bfe9dbb5'
 GMGCV1_PATH = 'data/GMGC10.95nr.fna'
@@ -56,6 +57,11 @@ gmgc_v1 = get_gmgcv1()
 
 results = {}
 
+# Jug 2.4 will support lambdas in Tasklets, but this is not yet released.
+# So we need to declare this as a separate function.
+def pp_strobe(p):
+    return 'strobes/'+p
+
 for study,ss in [
         (samples.DOG_STUDY, samples.DOG_SAMPLES),
         (samples.ZELLER_STUDY, samples.ZELLER_SAMPLES)]:
@@ -64,9 +70,11 @@ for study,ss in [
         pp = preprocess(study, p)
         ps.append(pp)
         for st in ['strict']:
-            strobe = strobefilter_count([pp], gmgc_v1, strategy=st)
+            pp = extract_strobes_to([pp], Tasklet(pp, pp_strobe))
+            strobe = strobefilter_count(pp, gmgc_v1, strategy=st)
             results[(p, st)] = strobe
-    for st in ['strict']:
-        results[study, st] = strobefilter_count(ps, gmgc_v1, strategy=st)
+    #for st in ['strict']:
+    #    results[study, st] = strobefilter_count(ps, gmgc_v1, strategy=st)
+
 
 
