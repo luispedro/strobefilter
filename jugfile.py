@@ -60,7 +60,7 @@ results = {}
 # Jug 2.4 will support lambdas in Tasklets, but this is not yet released.
 # So we need to declare this as a separate function.
 def pp_strobe(p):
-    return 'strobes/'+p
+    return 'preproc-data/strobes/'+p
 
 for study,ss in [
         (samples.DOG_STUDY, samples.DOG_SAMPLES),
