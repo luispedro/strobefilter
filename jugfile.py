@@ -53,9 +53,21 @@ def get_gmgcv1():
         raise Exception('Hash mismatch')
     return target
 
+@TaskGenerator
+def size_fastq(fastq, strobef : str):
+    print(f'size_fastq({fastq}, {strobef})')
+    from fastaq import fastq_iter
+    import numpy as np
+    n = 0
+    for _ in fastq_iter(fastq):
+        n += 1
+    rmers = np.load(strobef, mmap_mode='r')
+    return n, rmers.shape[0]
+
 gmgc_v1 = get_gmgcv1()
 
 results = {}
+sizes = {}
 
 # Jug 2.4 will support lambdas in Tasklets, but this is not yet released.
 # So we need to declare this as a separate function.
@@ -69,9 +81,10 @@ for study,ss in [
     for p in ss:
         pp = preprocess(study, p)
         ps.append(pp)
-        pp = extract_strobes_to([pp], Tasklet(pp, pp_strobe))
+        rmers = extract_strobes_to([pp], Tasklet(pp, pp_strobe))
+        sizes[p] = size_fastq(pp, rmers)
         for st in ['strict', 'packed']:
-            strobe = strobefilter_count(pp, gmgc_v1, strategy=st)
+            strobe = strobefilter_count(rmers, gmgc_v1, strategy=st)
             results[(p, st)] = strobe
     #for st in ['strict']:
     #    results[study, st] = strobefilter_count(ps, gmgc_v1, strategy=st)
