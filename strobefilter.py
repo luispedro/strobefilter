@@ -5,17 +5,37 @@ from collections import namedtuple
 FilterResults = namedtuple('FilterResults', ['nr_unigenes_kept', 'strategy'])
 
 def extract_strobes(fqs, ip):
-    seen = set()
-    n_fq = 0
-    for ifile in fqs:
-        print(f'Extracting strobes from {ifile}')
-        for _, seq,_ in fastq_iter(ifile):
-            n_fq += 1
-            rs = strobealign.randstrobes_query(seq, ip)
-            for r in rs: seen.add(r.hash)
-            if n_fq % 1_000_000 == 0 and n_fq < 10_000_000 or n_fq % 10_000_000 == 0:
-                print(f'{n_fq//1000/1000.}m reads, {len(seen)//10000/100.}m hashes')
-    return seen
+    import tempfile
+    import subprocess
+    import numpy as np
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tempfile = f'{tmpdir}/tmp.txt'
+        seen = set()
+        n_fq = 0
+        p_n = 0
+        with open(tempfile, 'w') as f:
+            for ifile in fqs:
+                print(f'extracting strobes from {ifile}')
+                for _, seq,_ in fastq_iter(ifile):
+                    n_fq += 1
+                    rs = strobealign.randstrobes_query(seq, ip)
+                    for r in rs: seen.add(r.hash)
+                    if len(seen) > 15_000_000:
+                        print(f'writing {len(seen)} hashes (from {n_fq - p_n} reads) to {tempfile}')
+                        p_n = n_fq
+                        for s in seen:
+                            f.write(f'{s}\n')
+                        seen.clear()
+                    if n_fq % 1_000_000 == 0 and n_fq < 10_000_000 or n_fq % 10_000_000 == 0:
+                        print(f'{n_fq//1000/1000.}m reads, {len(seen)//10000/100.}m hashes')
+            for s in seen:
+                f.write(f'{s}\n')
+            seen.clear()
+        print(f'sorting and removing duplicates from {tempfile}')
+        subprocess.check_call(['sort', '-u', '-o', tempfile+'.u', tempfile])
+        r = np.loadtxt(tempfile+'.u', dtype=np.uint64)
+        r.sort()
+        return r
 
 def extract_strobes_to(fqs, ofile):
     import numpy as np
@@ -23,8 +43,7 @@ def extract_strobes_to(fqs, ofile):
     makedirs(path.dirname(ofile), exist_ok=True)
     ip = strobealign.IndexParameters.from_read_length(100)
     seen = extract_strobes(fqs, ip)
-    seena = np.array(list(seen), dtype=np.uint64)
-    np.save(ofile, seena)
+    np.save(ofile, seen)
     return ofile
 
 def strobefilter_count(rmers, ffile, strategy='strict'):
