@@ -62,6 +62,28 @@ def extract_strobes_to(fqs, ofile):
     np.save(ofile, seen)
     return ofile
 
+def read_chunk(fname):
+    import numpy as np
+    with open(fname, 'rb') as f:
+        partial = None
+        while ch := f.read(8*1024*1024):
+            buf = np.frombuffer(ch, dtype=np.uint64)
+            cur_p = 0
+            if partial is not None:
+                ch_s = int(partial[0])
+                cur_p = ch_s - len(partial) + 1
+                chunk = np.concatenate([partial[1:], buf[:cur_p]])
+                yield chunk
+                partial = None
+            while True:
+                ch_s = int(buf[cur_p])
+                if cur_p + ch_s + 1 >= len(buf):
+                    partial = buf[cur_p:]
+                    break
+                yield buf[cur_p+1:cur_p+ch_s+1]
+                cur_p += ch_s + 1
+                if cur_p >= len(buf):
+                    break
 def strobefilter_count(rmers, preprocfa, strategy='strict'):
     import numpy as np
     import zstandard as zstd
@@ -89,23 +111,20 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
     n = 0
     s = 0
     s1 = 0
-    with open(preprocfa, 'rb') as ifile:
-        while bufsize := ifile.read(8):
-            bufsize = np.frombuffer(bufsize, dtype=np.uint64)
-            hs = np.frombuffer(ifile.read(int(bufsize[0]*8)), dtype=np.uint64)
-            n += 1
-            if strategy == 'packed':
-                common = np.sum(
-                            packed[
-                                hs.view(dtype=np.uint32).reshape((-1, 2))
-                                ].sum(1)
-                            ==2)
-            else:
-                common = sum((h in seen) for h in hs)
-            s  += common > 0
-            s1 += common > 1
-            if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
-                print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected, {s1/n:.5%} with > 1 hit')
+    for hs in read_chunk(preprocfa):
+        n += 1
+        if strategy == 'packed':
+            common = np.sum(
+                        packed[
+                            hs.view(dtype=np.uint32).reshape((-1, 2))
+                            ].sum(1)
+                        ==2)
+        else:
+            common = sum((h in seen) for h in hs)
+        s  += common > 0
+        s1 += common > 1
+        if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
+            print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected, {s1/n:.5%} with > 1 hit')
     return [FilterResults(s, 'min1')
             ,FilterResults(s1, 'min2')]
 
