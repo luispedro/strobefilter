@@ -62,8 +62,9 @@ def extract_strobes_to(fqs, ofile):
     np.save(ofile, seen)
     return ofile
 
-def strobefilter_count(rmers, ffile, strategy='strict'):
+def strobefilter_count(rmers, preprocfa, strategy='strict'):
     import numpy as np
+    import zstandard as zstd
     if strategy not in ['strict', 'packed']:
         raise ValueError('Only strict and packed strategies are implemented')
     ip = strobealign.IndexParameters.from_read_length(100)
@@ -88,10 +89,11 @@ def strobefilter_count(rmers, ffile, strategy='strict'):
     n = 0
     s = 0
     s1 = 0
-    for h, seq in fasta_iter(ffile):
+    for line in zstd.open(preprocfa, 'rt'):
         n += 1
-        rs = strobealign.randstrobes_query(seq, ip)
-        hs = set(r.hash for r in rs)
+        line = line.strip()
+        if not line: continue
+        hs = [int(h) for h in line.split()]
         if strategy == 'packed':
             hs = np.array(list(hs), dtype=np.uint64)
             common = np.sum(
@@ -108,3 +110,21 @@ def strobefilter_count(rmers, ffile, strategy='strict'):
     return [FilterResults(s, 'min1')
             ,FilterResults(s1, 'min2')]
 
+
+def extract_fa_strobes(fafile):
+    from os import makedirs, path
+    import zstandard as zstd
+    ofile = 'preproc-data/preproc-fasta/' + path.basename(fafile) + '.txt.zstd'
+    makedirs(path.dirname(ofile), exist_ok=True)
+    ip = strobealign.IndexParameters.from_read_length(100)
+    with zstd.open(ofile, "wt") as f:
+        n = 0
+        for h, seq in fasta_iter(fafile):
+            rs = strobealign.randstrobes_query(seq, ip)
+            hs = set(rs.hash for rs in rs)
+            f.write('\t'.join([str(s) for s in sorted(hs)]))
+            f.write('\n')
+            n += 1
+            if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
+                print(f'{n//1000/1000.}m preprocessed')
+    return ofile
