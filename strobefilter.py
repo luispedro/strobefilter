@@ -8,32 +8,48 @@ def extract_strobes(fqs, ip):
     import tempfile
     import subprocess
     import numpy as np
+    import os
+    import gzip
     with tempfile.TemporaryDirectory() as tmpdir:
-        tempfile = f'{tmpdir}/tmp.txt'
         seen = set()
+        CHUNK = 60_000_000
         n_fq = 0
-        p_n = 0
-        with open(tempfile, 'w') as f:
-            for ifile in fqs:
-                print(f'extracting strobes from {ifile}')
-                for _, seq,_ in fastq_iter(ifile):
-                    n_fq += 1
-                    rs = strobealign.randstrobes_query(seq, ip)
-                    for r in rs: seen.add(r.hash)
-                    if len(seen) > 15_000_000:
-                        print(f'writing {len(seen)} hashes (from {n_fq - p_n} reads) to {tempfile}')
-                        p_n = n_fq
-                        for s in seen:
-                            f.write(f'{s}\n')
-                        seen.clear()
-                    if n_fq % 1_000_000 == 0 and n_fq < 10_000_000 or n_fq % 10_000_000 == 0:
-                        print(f'{n_fq//1000/1000.}m reads, {len(seen)//10000/100.}m hashes')
-            for s in seen:
-                f.write(f'{s}\n')
+        tmp_ix = 0
+        def merge_tempfiles():
+            print(f'Merging {len(seen)//10000/100.}m hashes')
+            tempfile = f'{tmpdir}/tmp_{tmp_ix}.txt.gz'
+            with gzip.open(tempfile, 'wt', compresslevel=1) as f:
+                for s in seen:
+                    f.write(f'{s}\n')
+                if tmp_ix > 0:
+                    print('Loading from previous chunk')
+                    with gzip.open(f'{tmpdir}/tmp_{tmp_ix-1}.txt.gz', 'rt') as f2:
+                        n_total = 0
+                        n_written = 0
+                        for line in f2:
+                            ell = int(line.strip())
+                            n_total += 1
+                            if ell not in seen:
+                                n_written += 1
+                                f.write(line)
+                    print(f'Copied {n_written//10000/100.}m hashes ({n_written/n_total:.2%}) from previous chunk, total {(n_written+len(seen))//10000/100.}m [{n_fq//1000/1000.}m reads; chunk {tmp_ix}]')
+                    os.unlink(f'{tmpdir}/tmp_{tmp_ix-1}.txt.gz')
             seen.clear()
-        print(f'sorting and removing duplicates from {tempfile}')
-        subprocess.check_call(['sort', '-u', '-o', tempfile+'.u', tempfile])
-        r = np.loadtxt(tempfile+'.u', dtype=np.uint64)
+            return tempfile
+
+        for ifile in fqs:
+            print(f'extracting strobes from {ifile}')
+            for _, seq,_ in fastq_iter(ifile):
+                n_fq += 1
+                rs = strobealign.randstrobes_query(seq, ip)
+                for r in rs: seen.add(r.hash)
+                if len(seen) > CHUNK:
+                    merge_tempfiles()
+                    tmp_ix += 1
+                if n_fq % 1_000_000 == 0 and n_fq < 10_000_000 or n_fq % 10_000_000 == 0:
+                    print(f'{n_fq//1000/1000.}m reads, {len(seen)//10000/100.}m hashes')
+        tempfile = merge_tempfiles()
+        r = np.loadtxt(tempfile, dtype=np.uint64)
         r.sort()
         return r
 
