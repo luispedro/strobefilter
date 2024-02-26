@@ -75,7 +75,15 @@ def strobefilter_count(rmers, ffile, strategy='strict'):
         packed[seen] = 1
         del seen
     else:
-        seen = set(seen)
+        import stly
+        print(f'Building unordered_set with {len(seen):,} elements')
+        seens = stly.unordered_set_uint64_t()
+        seens.reserve(len(seen))
+        print(f'Allocated unordered_set with {seens.capacity():,} elements')
+        for s in seen:
+            seens.add(s)
+        seen = seens
+        print(f'Built unordered_set with {len(seen):,} elements')
 
     n = 0
     s = 0
