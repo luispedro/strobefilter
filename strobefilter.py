@@ -97,6 +97,6 @@ def strobefilter_count(rmers, ffile, strategy='strict'):
         s1 += common > 1
         if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
             print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected, {s1/n:.5%} with > 1 hit')
-    return [FilterResults(s, 'strict')
+    return [FilterResults(s, 'min1')
             ,FilterResults(s1, 'min2')]
 
