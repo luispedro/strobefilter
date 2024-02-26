@@ -89,41 +89,44 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
     n = 0
     s = 0
     s1 = 0
-    for line in zstd.open(preprocfa, 'rt'):
-        n += 1
-        line = line.strip()
-        if not line: continue
-        hs = [int(h) for h in line.split()]
-        if strategy == 'packed':
-            hs = np.array(list(hs), dtype=np.uint64)
-            common = np.sum(
-                        packed[
-                            hs.view(dtype=np.uint32).reshape((-1, 2))
-                            ].sum(1)
-                        ==2)
-        else:
-            common = sum((h in seen) for h in hs)
-        s  += common > 0
-        s1 += common > 1
-        if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
-            print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected, {s1/n:.5%} with > 1 hit')
+    with open(preprocfa, 'rb') as ifile:
+        while bufsize := ifile.read(8):
+            bufsize = np.frombuffer(bufsize, dtype=np.uint64)
+            hs = np.frombuffer(ifile.read(int(bufsize[0]*8)), dtype=np.uint64)
+            n += 1
+            if strategy == 'packed':
+                common = np.sum(
+                            packed[
+                                hs.view(dtype=np.uint32).reshape((-1, 2))
+                                ].sum(1)
+                            ==2)
+            else:
+                common = sum((h in seen) for h in hs)
+            s  += common > 0
+            s1 += common > 1
+            if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
+                print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected, {s1/n:.5%} with > 1 hit')
     return [FilterResults(s, 'min1')
             ,FilterResults(s1, 'min2')]
 
 
 def extract_fa_strobes(fafile):
     from os import makedirs, path
-    import zstandard as zstd
-    ofile = 'preproc-data/preproc-fasta/' + path.basename(fafile) + '.txt.zstd'
+    import numpy as np
+    ofile = 'preproc-data/preproc-fasta/' + path.basename(fafile) + '.bin'
     makedirs(path.dirname(ofile), exist_ok=True)
     ip = strobealign.IndexParameters.from_read_length(100)
-    with zstd.open(ofile, "wt") as f:
+    size = np.zeros(1, dtype=np.uint64)
+    with open(ofile, "wb") as f:
         n = 0
         for h, seq in fasta_iter(fafile):
             rs = strobealign.randstrobes_query(seq, ip)
             hs = set(rs.hash for rs in rs)
-            f.write('\t'.join([str(s) for s in sorted(hs)]))
-            f.write('\n')
+            hs = np.array(list(hs), dtype=np.uint64)
+            hs.sort()
+            size[0] = len(hs)
+            f.write(size.data)
+            f.write(hs.data)
             n += 1
             if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
                 print(f'{n//1000/1000.}m preprocessed')
