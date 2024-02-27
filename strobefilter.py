@@ -105,8 +105,14 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
         print(f'Allocated unordered_set with {seens.capacity():,} elements')
         for s in seen:
             seens.add(s)
-        seen = seens
         print(f'Built unordered_set with {len(seen):,} elements')
+
+        seen32 = seen & 0xFFFFFFFF
+        seen32.sort()
+        pref = np.zeros(2**32, dtype=np.uint8)
+        pref[seen32] = 1
+        del seen32
+        seen = seens
 
     n = 0
     s = 0
@@ -120,11 +126,12 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
                             ].sum(1)
                         ==2)
         else:
+            hs = hs[pref[hs.view(dtype=np.uint32)[::2]].astype(bool)]
             common = sum((h in seen) for h in hs)
         s  += common > 0
         s1 += common > 1
         if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
-            print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected, {s1/n:.5%} with > 1 hit')
+            print(f'{n//1000/1000.}m unigenes, {s/n:.5%} selected, {s1/n:.5%} with > 1 hit [{strategy}]')
     return [FilterResults(s, 'min1')
             ,FilterResults(s1, 'min2')]
 
