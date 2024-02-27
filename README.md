@@ -29,10 +29,14 @@ that shares any hash with the set of hashes from the reads. Currently being cons
 - [NGLess](https://ngless.embl.de/)
 - [Strobealign](https://github.com/ksahlin/strobealign) ([Sahlin, 2022](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02831-7)), including the Python bindings
 
+
 ### Data
 
 1. _Database_ GMGCv1 (from ([Coelho et al., 2022](https://www.nature.com/articles/s41586-021-04233-4)). This can be is downloaded by `jugfile.py`
 2. _Metagenomes_: Dog dataset (from [Coelho et al., 2018](https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-018-0450-3)) and human gut dataset (from [Zeller et al., 2014](https://doi.org/10.15252/msb.20145645). These can be downloaded with [ena-mirror](https://github.com/BigDataBiology/ena-mirror). More guidance will be provided on how to do it soon, but [get in touch](https://github.com/luispedro/strobefilter/issues) if you have questions.
+
+Note that running this benchmark will use a lot of disk storage!
+
 
 ### Author
 
