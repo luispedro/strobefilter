@@ -4,12 +4,13 @@ from jug import TaskGenerator, Tasklet
 
 import samples
 from preprocess import preprocess
-from strobefilter import strobefilter_count, extract_strobes_to, extract_fa_strobes
+from strobefilter import strobefilter_count, extract_strobes_to, extract_fa_strobes, subsample_strobed_fasta
 
 preprocess = TaskGenerator(preprocess)
 strobefilter_count = TaskGenerator(strobefilter_count)
 extract_strobes_to = TaskGenerator(extract_strobes_to)
 extract_fa_strobes = TaskGenerator(extract_fa_strobes)
+subsample_strobed_fasta = TaskGenerator(subsample_strobed_fasta)
 
 GMGCV1_HASH = 'fde21071406072134befbbf6aacca6c9e27604a0d3e4954c2dbc3ee4bfe9dbb5'
 GMGCV1_PATH = 'data/GMGC10.95nr.fna'
@@ -68,6 +69,7 @@ def size_fastq(fastq, strobef : str):
 gmgc_v1 = get_gmgcv1()
 
 fastrobes = extract_fa_strobes(gmgc_v1)
+fastrobes_sub = subsample_strobed_fasta(fastrobes)
 
 results = {}
 sizes = {}
@@ -87,8 +89,9 @@ for study,ss in [
         rmers = extract_strobes_to([pp], Tasklet(pp, pp_strobe))
         sizes[p] = size_fastq(pp, rmers)
         for st in ['strict', 'packed']:
-            strobe = strobefilter_count(rmers, fastrobes, strategy=st)
-            results[(p, st)] = strobe
+            if len(ps) < 5:
+                results[study, p, st+'-full'] = strobefilter_count(rmers, fastrobes, strategy=st)
+            results[study, p, st] = strobefilter_count(rmers, fastrobes_sub, strategy=st)
     #for st in ['strict']:
     #    results[study, st] = strobefilter_count(ps, fastrobes, strategy=st)
 

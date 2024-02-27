@@ -84,6 +84,28 @@ def read_chunk(fname):
                 cur_p += ch_s + 1
                 if cur_p >= len(buf):
                     break
+
+def subsample_strobed_fasta(fn):
+    ofile = fn + '.subsampled'
+    import random
+    import numpy as np
+    random.seed(123)
+    sz = np.zeros(1, dtype=np.uint64)
+    n = 0
+    w = 0
+    with open(ofile, 'wb') as f:
+        for ch in read_chunk(fn):
+            n += 1
+            if random.random() < .01:
+                sz[0] = len(ch)
+                f.write(sz.data)
+                f.write(ch.data)
+                w += 1
+            if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
+                print(f'{n//1000/1000.}m chunks, {w//1000/1000.}m written')
+    return ofile
+
+
 def strobefilter_count(rmers, preprocfa, strategy='strict'):
     import numpy as np
     import zstandard as zstd
