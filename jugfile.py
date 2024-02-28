@@ -89,6 +89,17 @@ sizes = {}
 def pp_strobe(p):
     return 'preproc-data/strobes/' + p + '.npy'
 
+@TaskGenerator
+def reorganize_results(results):
+    import pandas as pd
+    reordered = []
+    for (study,sample,strat),vs in results.items():
+        for (n,crit) in vs:
+            reordered.append((study+'/'+sample, strat, crit, n))
+    reordered = pd.DataFrame(reordered, columns=['sample', 'strategy', 'criterion', 'nr_unigenes_kept'])
+    reordered = pd.pivot(reordered, index='sample', values='nr_unigenes_kept', columns=['strategy', 'criterion'])
+    return reordered
+
 for study,ss in [
         (samples.DOG_STUDY, samples.DOG_SAMPLES),
         (samples.ZELLER_STUDY, samples.ZELLER_SAMPLES)]:
@@ -105,5 +116,4 @@ for study,ss in [
     #for st in ['strict']:
     #    results[study, st] = strobefilter_count(ps, fastrobes, strategy=st)
 
-
-
+final = reorganize_results(results)
