@@ -10,8 +10,14 @@ def extract_strobes(ifile, ip):
     import os
     import gzip
     with tempfile.TemporaryDirectory() as tmpdir:
-        seen = set()
-        CHUNK = 60_000_000
+        try:
+            import stly
+            seen = stly.unordered_set_uint64_t()
+            chunksize = 120_000_000
+            seen.reserve(chunksize)
+        except ImportError:
+            seen = set()
+            chunksize = 80_000_000
         n_fq = 0
         tmp_ix = 0
         def merge_tempfiles():
@@ -40,13 +46,19 @@ def extract_strobes(ifile, ip):
             n_fq += 1
             rs = strobealign.randstrobes_query(seq, ip)
             for r in rs: seen.add(r.hash)
-            if len(seen) > CHUNK:
+            if len(seen) > chunksize:
                 merge_tempfiles()
                 tmp_ix += 1
             if n_fq % 1_000_000 == 0 and n_fq < 10_000_000 or n_fq % 10_000_000 == 0:
                 print(f'{n_fq//1000/1000.}m reads, {len(seen)//10000/100.}m hashes')
-        tempfile = merge_tempfiles()
-        r = np.loadtxt(tempfile, dtype=np.uint64)
+        if tmp_ix > 0:
+            tempfile = merge_tempfiles()
+            del seen
+            r = np.loadtxt(tempfile, dtype=np.uint64)
+        else:
+            r = np.zeros(len(seen), dtype=np.uint64)
+            for i, s in enumerate(seen):
+                r[i] = s
         r.sort()
         return (r, n_fq)
 
