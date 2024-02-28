@@ -5,12 +5,14 @@ from jug import TaskGenerator, Tasklet
 import samples
 from preprocess import preprocess
 from strobefilter import strobefilter_count, extract_strobes_to, extract_fa_strobes, subsample_strobed_fasta
+from print_report import print_report
 
 preprocess = TaskGenerator(preprocess)
 strobefilter_count = TaskGenerator(strobefilter_count)
 extract_strobes_to = TaskGenerator(extract_strobes_to)
 extract_fa_strobes = TaskGenerator(extract_fa_strobes)
 subsample_strobed_fasta = TaskGenerator(subsample_strobed_fasta)
+print_report = TaskGenerator(print_report)
 
 GMGCV1_HASH = 'fde21071406072134befbbf6aacca6c9e27604a0d3e4954c2dbc3ee4bfe9dbb5'
 GMGCV1_PATH = 'data/GMGC10.95nr.fna'
@@ -117,3 +119,4 @@ for study,ss in [
     #    results[study, st] = strobefilter_count(ps, fastrobes, strategy=st)
 
 final = reorganize_results(results)
+print_report(final, size_fasta_sub, 'output_report.md')

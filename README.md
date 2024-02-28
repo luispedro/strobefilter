@@ -29,6 +29,9 @@ that shares any hash with the set of hashes from the reads. Currently being cons
 - [NGLess](https://ngless.embl.de/)
 - [Strobealign](https://github.com/ksahlin/strobealign) ([Sahlin, 2022](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02831-7)), including the Python bindings
 
+```
+conda install python=3.11 numpy pandas requests tabulate jug ngless
+```
 
 ### Data
 
