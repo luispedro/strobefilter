@@ -4,9 +4,8 @@ from collections import namedtuple
 
 FilterResults = namedtuple('FilterResults', ['nr_unigenes_kept', 'strategy'])
 
-def extract_strobes(fqs, ip):
+def extract_strobes(ifile, ip):
     import tempfile
-    import subprocess
     import numpy as np
     import os
     import gzip
@@ -37,30 +36,30 @@ def extract_strobes(fqs, ip):
             seen.clear()
             return tempfile
 
-        for ifile in fqs:
-            print(f'extracting strobes from {ifile}')
-            for _, seq,_ in fastq_iter(ifile):
-                n_fq += 1
-                rs = strobealign.randstrobes_query(seq, ip)
-                for r in rs: seen.add(r.hash)
-                if len(seen) > CHUNK:
-                    merge_tempfiles()
-                    tmp_ix += 1
-                if n_fq % 1_000_000 == 0 and n_fq < 10_000_000 or n_fq % 10_000_000 == 0:
-                    print(f'{n_fq//1000/1000.}m reads, {len(seen)//10000/100.}m hashes')
+        for _, seq,_ in fastq_iter(ifile):
+            n_fq += 1
+            rs = strobealign.randstrobes_query(seq, ip)
+            for r in rs: seen.add(r.hash)
+            if len(seen) > CHUNK:
+                merge_tempfiles()
+                tmp_ix += 1
+            if n_fq % 1_000_000 == 0 and n_fq < 10_000_000 or n_fq % 10_000_000 == 0:
+                print(f'{n_fq//1000/1000.}m reads, {len(seen)//10000/100.}m hashes')
         tempfile = merge_tempfiles()
         r = np.loadtxt(tempfile, dtype=np.uint64)
         r.sort()
-        return r
+        return (r, n_fq)
 
-def extract_strobes_to(fqs, ofile):
+def extract_strobes_to(dataset, sample, ofile):
+    from preprocess import preprocess
     import numpy as np
     from os import makedirs, path
     makedirs(path.dirname(ofile), exist_ok=True)
     ip = strobealign.IndexParameters.from_read_length(100)
-    seen = extract_strobes(fqs, ip)
+    with preprocess(dataset, sample) as ifile:
+        seen, n_fq = extract_strobes(ifile, ip)
     np.save(ofile, seen)
-    return ofile
+    return ofile, n_fq, len(seen)
 
 def read_strobed_fasta_chunk(fname):
     import numpy as np

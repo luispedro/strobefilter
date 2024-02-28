@@ -1,19 +1,22 @@
 import subprocess
-from os import makedirs, path
-
+from contextlib import contextmanager
 NGLESS_THREADS = 4
 
-def preprocess(dataset, sample, compression: str = 'zst', preprocess: str = '25q/45ell') -> str:
+@contextmanager
+def preprocess(dataset, sample, preprocess: str = '25q/45ell') -> str:
     if preprocess != '25q/45ell':
         raise NotImplementedError('Only 25q/45ell is supported')
 
-    oname = f'preproc-data/{dataset}/{sample}.preproc.fq.{compression}'
-    makedirs(path.dirname(oname), exist_ok=True)
-    subprocess.check_call(
+    proc = subprocess.Popen(
             ['ngless',
              f'--threads={NGLESS_THREADS}',
              'preprocess.ngl',
-             f'data/{dataset}/{sample}',
-             oname])
-    return oname
+             f'data/{dataset}/{sample}'],
+            stdout=subprocess.PIPE,
+            text=True,
+            )
+    yield proc.stdout
+    proc.wait()
+    if proc.returncode != 0:
+        raise RuntimeError(f'Preprocessing failed for {dataset}/{sample}')
 

@@ -1,13 +1,11 @@
 import os
 from os import path
-from jug import TaskGenerator, Tasklet
+from jug import TaskGenerator
 
 import samples
-from preprocess import preprocess
 from strobefilter import strobefilter_count, extract_strobes_to, extract_fa_strobes, subsample_strobed_fasta
 from print_report import print_report
 
-preprocess = TaskGenerator(preprocess)
 strobefilter_count = TaskGenerator(strobefilter_count)
 extract_strobes_to = TaskGenerator(extract_strobes_to)
 extract_fa_strobes = TaskGenerator(extract_fa_strobes)
@@ -84,39 +82,36 @@ size_fasta = nr_elements_in_strobed_fasta(fastrobes)
 size_fasta_sub = nr_elements_in_strobed_fasta(fastrobes_sub)
 
 results = {}
-sizes = {}
-
-# Jug 2.4 will support lambdas in Tasklets, but this is not yet released.
-# So we need to declare this as a separate function.
-def pp_strobe(p):
-    return 'preproc-data/strobes/' + p + '.npy'
 
 @TaskGenerator
 def reorganize_results(results):
     import pandas as pd
     reordered = []
-    for (study,sample,strat),vs in results.items():
+    for (dataset,sample,strat),vs in results.items():
         for (n,crit) in vs:
-            reordered.append((study+'/'+sample, strat, crit, n))
+            reordered.append((dataset+'/'+sample, strat, crit, n))
     reordered = pd.DataFrame(reordered, columns=['sample', 'strategy', 'criterion', 'nr_unigenes_kept'])
     reordered = pd.pivot(reordered, index='sample', values='nr_unigenes_kept', columns=['strategy', 'criterion'])
     return reordered
 
-for study,ss in [
+for dataset,ss in [
         (samples.DOG_STUDY, samples.DOG_SAMPLES),
         (samples.ZELLER_STUDY, samples.ZELLER_SAMPLES)]:
     ps = []
-    for p in ss:
-        pp = preprocess(study, p)
-        ps.append(pp)
-        rmers = extract_strobes_to([pp], Tasklet(pp, pp_strobe))
-        sizes[p] = size_fastq(pp, rmers)
+    for sample in ss:
+        rmers = extract_strobes_to(dataset,
+                                    sample,
+                                    path.join('preproc-data',
+                                                'strobes',
+                                                dataset,
+                                                f'{sample}.preproc.npy'))
+        ps.append(rmers[0])
         for st in ['strict', 'packed']:
             if len(ps) < 5:
-                results[study, p, st+'-full'] = strobefilter_count(rmers, fastrobes, strategy=st)
-            results[study, p, st] = strobefilter_count(rmers, fastrobes_sub, strategy=st)
+                results[dataset, sample, st+'-full'] = strobefilter_count(rmers[0], fastrobes, strategy=st)
+            results[dataset, sample, st] = strobefilter_count(rmers[0], fastrobes_sub, strategy=st)
     #for st in ['strict']:
-    #    results[study, st] = strobefilter_count(ps, fastrobes, strategy=st)
+    #    results[dataset, st] = strobefilter_count(ps, fastrobes, strategy=st)
 
 final = reorganize_results(results)
 print_report(final, size_fasta_sub, 'output_report.md')

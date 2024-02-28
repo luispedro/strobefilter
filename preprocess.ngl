@@ -7,5 +7,5 @@ preproc = preprocess(sample) using |r|:
     if len(r) < 45:
         discard
 
-write(preproc, ofile=ARGV[2], format_flags={interleaved})
+write(preproc, ofile=STDOUT, format_flags={interleaved})
 

@@ -1,4 +1,6 @@
 def open_for(fname):
+    if hasattr(fname, 'read'):
+        return lambda _, __ :fname
     if fname.endswith('.gz'):
         import gzip
         return gzip.open
