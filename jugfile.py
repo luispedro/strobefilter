@@ -5,6 +5,7 @@ from jug import TaskGenerator
 import samples
 from strobefilter import strobefilter_count, extract_strobes_to, extract_fa_strobes, subsample_strobed_fasta
 from print_report import print_report
+from download import download_if_needed
 
 strobefilter_count = TaskGenerator(strobefilter_count)
 extract_strobes_to = TaskGenerator(extract_strobes_to)
@@ -24,43 +25,10 @@ def nr_elements_in_strobed_fasta(f):
         n += 1
     return n
 
-def hash_file(file_path):
-    import hashlib
-    h = hashlib.sha256()
-    with open(file_path, 'rb') as file:
-        while True:
-            chunk = file.read(h.block_size)
-            if not chunk:
-                break
-            h.update(chunk)
-    return h.hexdigest()
 
 @TaskGenerator
 def get_gmgcv1():
-    import requests
-    target = GMGCV1_PATH
-    if path.exists(target):
-        print(f'Target {target} exists. Double checking hash.')
-        hd = hash_file(target)
-        if hd == GMGCV1_HASH:
-            print(f'Hash matches. Skipping download.')
-            return target
-        else:
-            print(f'Hash mismatch. Cowardly refusing to overwrite. Expected {GMGCV1_HASH}, got {hd}.')
-            raise Exception('Hash mismatch')
-    print(f'Downloading {target}.')
-
-    r = requests.get(GMGC_URL, allow_redirects=True, stream=True)
-
-    with open(target, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
-    print(f'Finished downloading {target}.')
-    if hash_file(target) != GMGCV1_HASH:
-        os.unlink(target)
-        raise Exception('Hash mismatch')
-    return target
+    return download_if_needed(GMGCV1_URL, GMGCV1_PATH, GMGCV1_HASH)
 
 @TaskGenerator
 def size_fastq(fastq, strobef : str):
