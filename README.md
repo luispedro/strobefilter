@@ -1,11 +1,13 @@
 # Prefilter for mapping
 
 **Problem:** Mapping metagenomes to large databases, such as the
-[GMGCv1](https://gmgc.embl.de), takes too much memory. Partioning the dataset
-is a common solution, but it has drawbacks.
+[GMGCv1](https://gmgc.embl.de), takes too much memory. Partitioning the dataset
+is a common solution (and [supported by
+NGLess](https://ngless.embl.de/Mapping.html#low-memory-mode), but it has
+drawbacks (it's slow).
 
-This repository explores prefiltering the database by removing sequences that
-are extremely unlikely to be matches.
+This repository explores the possibility of prefiltering the database by
+removing sequences that are extremely unlikely to be matches.
 
 ## Approach
 
@@ -14,24 +16,32 @@ are extremely unlikely to be matches.
 3. Map as usual to the pre-filtered database
 
 For `2`, different strategies are possible. The simplest is to keep any unigene
-that shares any hash with the set of hashes from the reads. Currently being considered
+that shares any hash with the set of hashes from the reads. Currently being
+considered
 
-- `strict`: keep all references that match at least one hash
+- `min1`: keep all references that match at least one hash
 - `min2`: keep all references that match at least two hashes
-- `packed`: a hacky Bloom filter structure that uses a single fixed size array
-  (break up the 64 bit hash into two 32 bit hashes and set both to `1`)
 
+We also tested counting the exact value or using a hacky Bloom filter structure
+that uses a single fixed size array, but the hacky version gave bad estimates.
 
 ### Requirements
 
-- Python
+- Python, including NumPy and Pandas
 - [Jug](https://jug.rtfd.io/)
 - [NGLess](https://ngless.embl.de/)
 - [Strobealign](https://github.com/ksahlin/strobealign) ([Sahlin, 2022](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02831-7)), including the Python bindings
+- [tabulate](https://pypi.org/project/tabulate/) is used to print the final table
+
+To install most dependencies (assuming you have conda-forge & bioconda set up):
 
 ```
 conda install python=3.11 numpy pandas requests tabulate jug ngless
 ```
+
+If available, [stly](https://github.com/luispedro/stly) is used to save memory;
+otherwise, the code will fall back on the standard Python `set` (which is
+actually faster).
 
 ### Data
 
