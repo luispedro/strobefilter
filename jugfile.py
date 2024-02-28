@@ -16,6 +16,13 @@ GMGCV1_HASH = 'fde21071406072134befbbf6aacca6c9e27604a0d3e4954c2dbc3ee4bfe9dbb5'
 GMGCV1_PATH = 'data/GMGC10.95nr.fna'
 GMGCV1_URL = 'http://gmgc.embl.de/downloads/v1.0/GMGC10.95nr.fna'
 
+@TaskGenerator
+def nr_elements_in_strobed_fasta(f):
+    from strobefilter import read_strobed_fasta_chunk
+    n = 0
+    for _ in read_strobed_fasta_chunk(f):
+        n += 1
+    return n
 
 def hash_file(file_path):
     import hashlib
@@ -70,6 +77,9 @@ gmgc_v1 = get_gmgcv1()
 
 fastrobes = extract_fa_strobes(gmgc_v1)
 fastrobes_sub = subsample_strobed_fasta(fastrobes)
+
+size_fasta = nr_elements_in_strobed_fasta(fastrobes)
+size_fasta_sub = nr_elements_in_strobed_fasta(fastrobes_sub)
 
 results = {}
 sizes = {}

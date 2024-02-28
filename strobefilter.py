@@ -62,7 +62,7 @@ def extract_strobes_to(fqs, ofile):
     np.save(ofile, seen)
     return ofile
 
-def read_chunk(fname):
+def read_strobed_fasta_chunk(fname):
     import numpy as np
     with open(fname, 'rb') as f:
         partial = None
@@ -94,7 +94,7 @@ def subsample_strobed_fasta(fn):
     n = 0
     w = 0
     with open(ofile, 'wb') as f:
-        for ch in read_chunk(fn):
+        for ch in read_strobed_fasta_chunk(fn):
             n += 1
             if random.random() < .01:
                 sz[0] = len(ch)
@@ -139,7 +139,7 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
     n = 0
     s = 0
     s1 = 0
-    for hs in read_chunk(preprocfa):
+    for hs in read_strobed_fasta_chunk(preprocfa):
         n += 1
         if strategy == 'packed':
             common = np.sum(
