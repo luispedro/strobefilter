@@ -191,5 +191,5 @@ def extract_fa_strobes(fafile):
             f.write(hs.data)
             n += 1
             if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
-                print(f'{n//1000/1000.}m preprocessed')
+                print(f'{n//1000/1000.}m preprocessed ({fafile})')
     return ofile
