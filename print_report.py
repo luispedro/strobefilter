@@ -1,9 +1,7 @@
-def print_report(final, size_fasta_sub, ofile):
-
+def print_report(final, ofile):
     frac = final.dropna(axis=1)
-    frac /= size_fasta_sub
     frac *= 100
-    fra = frac.copy()
+    frac = frac.copy()
     frac['study'] = frac.index.str.split('/').str[0]
 
     table = frac.groupby('study').describe().round(2).T.loc['strict']

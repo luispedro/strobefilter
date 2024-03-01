@@ -63,10 +63,12 @@ fastrobes = extract_fa_strobes(gmgc_v1)
 fastrobes_sub = subsample_strobed_fasta(fastrobes)
 
 subcatalog = {}
+nr_elements = {}
 for key, (url, opath, hv) in SUBCATALOGS.items():
     fafile = download_if_needed(url, opath, hv)
     cat_fastrobes = extract_fa_strobes(fafile)
     subcatalog[key] = subsample_strobed_fasta(cat_fastrobes)
+    nr_elements[key] = nr_elements_in_strobed_fasta(subcatalog[key])
 
 size_fasta = nr_elements_in_strobed_fasta(fastrobes)
 size_fasta_sub = nr_elements_in_strobed_fasta(fastrobes_sub)
@@ -77,16 +79,17 @@ results = {}
 def reorganize_results(results):
     import pandas as pd
     reordered = []
-    for (dataset,sample,strat),vs in results.items():
+    for (dataset,sample,strat),(vs, n_db) in results.items():
         for (n,crit) in vs:
-            reordered.append((dataset+'/'+sample, strat, crit, n))
-    reordered = pd.DataFrame(reordered, columns=['sample', 'strategy', 'criterion', 'nr_unigenes_kept'])
-    reordered = pd.pivot(reordered, index='sample', values='nr_unigenes_kept', columns=['strategy', 'criterion'])
+            reordered.append((dataset+'/'+sample, strat, crit, n, n_db))
+    reordered = pd.DataFrame(reordered, columns=['sample', 'strategy', 'criterion', 'nr_unigenes_kept', 'initial_db'])
+    reordered.eval('frac_kept = nr_unigenes_kept/initial_db', inplace=True)
+    reordered = pd.pivot(reordered, index='sample', values='frac_kept', columns=['strategy', 'criterion'])
     return reordered
 
-for dataset,ss,subcat_sub in [
-        (samples.DOG_STUDY, samples.DOG_SAMPLES, subcatalog['dog-gut']),
-        (samples.ZELLER_STUDY, samples.ZELLER_SAMPLES, subcatalog['human-gut'])
+for dataset,ss,habitat in [
+        (samples.ZELLER_STUDY, samples.ZELLER_SAMPLES, 'human-gut'),
+        (samples.DOG_STUDY, samples.DOG_SAMPLES, 'dog-gut'),
         ]:
     ps = []
     for sample in ss:
@@ -99,11 +102,14 @@ for dataset,ss,subcat_sub in [
         ps.append(rmers[0])
         for st in ['strict', 'packed']:
             if len(ps) < 5:
-                results[dataset, sample, st+'-full'] = strobefilter_count(rmers[0], fastrobes, strategy=st)
-            results[dataset, sample, st] = strobefilter_count(rmers[0], fastrobes_sub, strategy=st)
-            results[dataset+':subcat', sample, st] = strobefilter_count(rmers[0], subcat_sub, strategy=st)
+                results[dataset, sample, st+'-full'] = (strobefilter_count(rmers[0], fastrobes, strategy=st),
+                                                        size_fasta)
+            results[dataset, sample, st] = (strobefilter_count(rmers[0], fastrobes_sub, strategy=st),
+                                            size_fasta_sub)
+            results[dataset+':'+habitat, sample, st] = (strobefilter_count(rmers[0], subcatalog[habitat], strategy=st),
+                                                      nr_elements[habitat])
     #for st in ['strict']:
     #    results[dataset, st] = strobefilter_count(ps, fastrobes, strategy=st)
 
 final = reorganize_results(results)
-print_report(final, size_fasta_sub, 'output_report.md')
+print_report(final, 'output_report.md')
