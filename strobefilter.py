@@ -131,24 +131,11 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
         packed[seen] = 1
         del seen
     else:
-        print(f'Building unordered_set with {len(seen):,} elements')
-        try:
-            import stly
-            seens = stly.unordered_set_uint64_t()
-            seens.reserve(len(seen))
-            print(f'Allocated unordered_set with {seens.capacity():,} elements')
-        except ImportError:
-            seens = set()
-        for s in seen:
-            seens.add(s)
-        print(f'Built unordered_set with {len(seen):,} elements')
-
         seen32 = seen & 0xFFFFFFFF
         seen32.sort()
         pref = np.zeros(2**32, dtype=bool)
         pref[seen32] = True
         del seen32
-        seen = seens
 
     n = 0
     s = 0
@@ -163,7 +150,8 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
                         ==2)
         else:
             hs = hs[pref[hs.view(dtype=np.uint32)[::2]]]
-            common = sum((h in seen) for h in hs)
+            ps = np.searchsorted(seen, hs)
+            common = np.sum(seen[ps] == hs)
         s  += common > 0
         s1 += common > 1
         if n % 1_000_000 == 0 and n < 10_000_000 or n % 10_000_000 == 0:
