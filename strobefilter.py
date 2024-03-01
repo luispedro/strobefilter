@@ -145,8 +145,8 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
 
         seen32 = seen & 0xFFFFFFFF
         seen32.sort()
-        pref = np.zeros(2**32, dtype=np.uint8)
-        pref[seen32] = 1
+        pref = np.zeros(2**32, dtype=bool)
+        pref[seen32] = True
         del seen32
         seen = seens
 
@@ -162,7 +162,7 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
                             ].sum(1)
                         ==2)
         else:
-            hs = hs[pref[hs.view(dtype=np.uint32)[::2]].astype(bool)]
+            hs = hs[pref[hs.view(dtype=np.uint32)[::2]]]
             common = sum((h in seen) for h in hs)
         s  += common > 0
         s1 += common > 1
