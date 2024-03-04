@@ -151,6 +151,7 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
         else:
             hs = hs[pref[hs.view(dtype=np.uint32)[::2]]]
             ps = np.searchsorted(seen, hs)
+            ps %= len(seen) # when the hash is larger than the largest in seen, this would be out of bounds
             common = np.sum(seen[ps] == hs)
         s  += common > 0
         s1 += common > 1
