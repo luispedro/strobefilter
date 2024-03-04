@@ -31,6 +31,12 @@ SUBCATALOGS = {
                 'data/GMGC10.human-gut.95nr.fna.gz',
                 'ef48089b9b7e6c0bfa3d01108c471d8575bcfed50dc392a8d40cdcc9e48a8b2f',
             ),
+        'marine':
+            (
+                'http://gmgc.embl.de/downloads/v1.0/subcatalogs/GMGC10.marine.95nr.fna.gz',
+                'data/GMGC10.marine.95nr.fna.gz',
+                'a9ba24184631c5190012dc26f1b0557c0806254900e2e1824a9dc81b30e8336a',
+            ),
             }
 
 
@@ -90,6 +96,7 @@ def reorganize_results(results):
 for dataset,ss,habitat in [
         (samples.ZELLER_STUDY, samples.ZELLER_SAMPLES, 'human-gut'),
         (samples.DOG_STUDY, samples.DOG_SAMPLES, 'dog-gut'),
+        (samples.TARA_STUDY, samples.TARA_SAMPLES, 'marine'),
         ]:
     ps = []
     for sample in ss:
@@ -101,7 +108,9 @@ for dataset,ss,habitat in [
                                                 f'{sample}.preproc.npy'))
         ps.append(rmers[0])
         for st in ['strict', 'packed']:
-            if len(ps) < 5:
+            if dataset == samples.TARA_STUDY and st == 'packed':
+                continue
+            if len(ps) < 5 and dataset != samples.TARA_STUDY:
                 results[dataset, sample, st+'-full'] = (strobefilter_count(rmers[0], fastrobes, strategy=st),
                                                         size_fasta)
             results[dataset, sample, st] = (strobefilter_count(rmers[0], fastrobes_sub, strategy=st),
