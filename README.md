@@ -39,6 +39,19 @@ To install most dependencies (assuming you have conda-forge & bioconda set up):
 conda install python=3.11 numpy pandas requests tabulate jug ngless
 ```
 
+To install `strobealign`'s Python bindings (which will **not** be installed by default with `conda`):
+
+```
+# To ensure you have a recent C++ compiler (not always needed)
+conda install gxx_linux-64 gcc_linux-64
+export CC CXX
+
+git clone https://github.com/ksahlin/strobealign
+cd strobealign
+pip install .
+```
+
+
 If available, [stly](https://github.com/luispedro/stly) is used to save memory;
 otherwise, the code will fall back on the standard Python `set` (which is
 actually faster).
