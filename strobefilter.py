@@ -119,7 +119,6 @@ def subsample_strobed_fasta(fn):
 
 def strobefilter_count(rmers, preprocfa, strategy='strict'):
     import numpy as np
-    import zstandard as zstd
     if strategy not in ['strict', 'packed']:
         raise ValueError('Only strict and packed strategies are implemented')
     ip = strobealign.IndexParameters.from_read_length(100)
