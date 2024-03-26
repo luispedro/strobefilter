@@ -62,13 +62,13 @@ def extract_strobes(ifile, ip):
         r.sort()
         return (r, n_fq)
 
-def extract_strobes_to(dataset, sample, ofile):
+def extract_strobes_to(dataset, sample, ofile, preproc='25q/45ell'):
     from preprocess import preprocess
     import numpy as np
     from os import makedirs, path
     makedirs(path.dirname(ofile), exist_ok=True)
     ip = strobealign.IndexParameters.from_read_length(100)
-    with preprocess(dataset, sample) as ifile:
+    with preprocess(dataset, sample, preproc) as ifile:
         seen, n_fq = extract_strobes(ifile, ip)
     np.save(ofile, seen)
     return ofile, n_fq, len(seen)
