@@ -4,62 +4,76 @@ from collections import namedtuple
 
 FilterResults = namedtuple('FilterResults', ['nr_unigenes_kept', 'strategy'])
 
+def merge_chunks(tempfiles, oname, merge_chunksize=8*1024*1024):
+    import contextlib
+    import numpy as np
+    import os
+    import mmap
+    with contextlib.ExitStack() as stack:
+        chunks = []
+        for f in tempfiles:
+            stack.enter_context(f := open(f, 'rb'))
+            chunks.append(mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ))
+        chunks = [np.frombuffer(ch, dtype=np.uint64) for ch in chunks]
+
+        rs = []
+        while chunks:
+            min_val = min(ch[min(merge_chunksize, len(ch)-1)] for ch in chunks)
+            next_chunks = []
+            to_merge = []
+            for ch in chunks:
+                p = 0
+                while p < len(ch) and ch[p] <= min_val:
+                    p += 1
+                to_merge.append(ch[:p])
+                if p < len(ch):
+                    next_chunks.append(ch[p:])
+            to_merge = np.concatenate(to_merge)
+            to_merge.sort()
+            rs.append(np.unique(to_merge))
+            chunks = next_chunks
+    with open(oname, 'wb') as f:
+        for r in rs:
+            f.write(r.data)
+    return oname
+
 def extract_strobes(ifile, ip):
     import tempfile
     import numpy as np
     import os
     import gzip
+    tempfiles = []
+    next_ix = 0
+    chunksize = 512_000_000
+    chunk = np.zeros(chunksize, dtype=np.uint64)
     with tempfile.TemporaryDirectory() as tmpdir:
-        try:
-            import stly
-            seen = stly.unordered_set_uint64_t()
-            chunksize = 120_000_000
-            seen.reserve(chunksize)
-        except ImportError:
-            seen = set()
-            chunksize = 80_000_000
         n_fq = 0
-        tmp_ix = 0
-        def merge_tempfiles():
-            print(f'Merging {len(seen)//10000/100.}m hashes')
-            tempfile = f'{tmpdir}/tmp_{tmp_ix}.txt.gz'
-            with gzip.open(tempfile, 'wt', compresslevel=1) as f:
-                for s in seen:
-                    f.write(f'{s}\n')
-                if tmp_ix > 0:
-                    print('Loading from previous chunk')
-                    with gzip.open(f'{tmpdir}/tmp_{tmp_ix-1}.txt.gz', 'rt') as f2:
-                        n_total = 0
-                        n_written = 0
-                        for line in f2:
-                            ell = int(line.strip())
-                            n_total += 1
-                            if ell not in seen:
-                                n_written += 1
-                                f.write(line)
-                    print(f'Copied {n_written//10000/100.}m hashes ({n_written/n_total:.2%}) from previous chunk, total {(n_written+len(seen))//10000/100.}m [{n_fq//1000/1000.}m reads; chunk {tmp_ix}]')
-                    os.unlink(f'{tmpdir}/tmp_{tmp_ix-1}.txt.gz')
-            seen.clear()
-            return tempfile
-
         for _, seq,_ in fastq_iter(ifile):
             n_fq += 1
             rs = strobealign.randstrobes_query(seq, ip)
-            for r in rs: seen.add(r.hash)
-            if len(seen) > chunksize:
-                merge_tempfiles()
-                tmp_ix += 1
+            for r in rs:
+                chunk[next_ix] = r.hash
+                next_ix += 1
+                if next_ix == chunksize:
+                    chunk.sort()
+                    u = np.unique(chunk)
+                    with open(f'{tmpdir}/chunk{len(tempfiles)}.raw', 'wb') as f:
+                        f.write(u.data)
+                    del u
+                    tempfiles.append(f'{tmpdir}/chunk{len(tempfiles)}.raw')
+                    print(f'Wrote chunk {len(tempfiles)} to disk {tempfiles[-1]}')
+                    next_ix = 0
             if n_fq % 1_000_000 == 0 and n_fq < 10_000_000 or n_fq % 10_000_000 == 0:
-                print(f'{n_fq//1000/1000.}m reads, {len(seen)//10000/100.}m hashes')
-        if tmp_ix > 0:
-            tempfile = merge_tempfiles()
-            del seen
-            r = np.loadtxt(tempfile, dtype=np.uint64)
-        else:
-            r = np.zeros(len(seen), dtype=np.uint64)
-            for i, s in enumerate(seen):
-                r[i] = s
-        r.sort()
+                print(f'{n_fq//1000/1000.}m reads')
+        if next_ix > 0:
+            chunk = np.unique(chunk[:next_ix])
+            with open(f'{tmpdir}/chunk{len(tempfiles)}.raw', 'wb') as f:
+                f.write(chunk.data)
+            tempfiles.append(f'{tmpdir}/chunk{len(tempfiles)}.raw')
+            print(f'Wrote chunk {len(tempfiles)} to disk {tempfiles[-1]}')
+        print(f'Merging {len(tempfiles)} chunks')
+        merge_chunks(tempfiles, f'{tmpdir}/merged.raw')
+        r = np.fromfile(f'{tmpdir}/merged.raw', dtype=np.uint64)
         return (r, n_fq)
 
 def extract_strobes_to(dataset, sample, ofile, preproc='25q/45ell'):
