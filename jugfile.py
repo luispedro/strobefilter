@@ -100,23 +100,20 @@ for dataset,ss,habitat in [
         ]:
     ps = []
     for sample in ss:
-        rmers = extract_strobes_to(dataset,
+        for preproc in ['25q-45ell', 'passthru']:
+            rmers = extract_strobes_to(dataset,
                                     sample,
                                     path.join('preproc-data',
                                                 'strobes',
                                                 dataset,
-                                                f'{sample}.preproc.npy'))
-        ps.append(rmers[0])
-        for st in ['strict', 'packed']:
-            if dataset == samples.TARA_STUDY and st == 'packed':
-                continue
-            if len(ps) < 5 and dataset != samples.TARA_STUDY:
-                results[dataset, sample, st+'-full'] = (strobefilter_count(rmers[0], fastrobes, strategy=st),
-                                                        size_fasta)
-            results[dataset, sample, st] = (strobefilter_count(rmers[0], fastrobes_sub, strategy=st),
-                                            size_fasta_sub)
-            results[dataset+':'+habitat, sample, st] = (strobefilter_count(rmers[0], subcatalog[habitat], strategy=st),
-                                                      nr_elements[habitat])
+                                                f'{sample}.{preproc}.npy'),
+                                    preproc=preproc)
+            ps.append(rmers[0])
+            for st in ['strict']:
+                results[dataset, sample, st] = (strobefilter_count(rmers[0], fastrobes_sub, strategy=st),
+                                                size_fasta_sub)
+                results[dataset+':'+habitat, sample, st] = (strobefilter_count(rmers[0], subcatalog[habitat], strategy=st),
+                                                          nr_elements[habitat])
     #for st in ['strict']:
     #    results[dataset, st] = strobefilter_count(ps, fastrobes, strategy=st)
 

@@ -11,11 +11,11 @@ def stream_gzips_to(files, fd):
     fd.close()
 
 @contextmanager
-def preprocess(dataset, sample, preprocess: str = '25q/45ell') -> str:
-    if preprocess not in ['25q/45ell', 'passthru']:
-        raise NotImplementedError(f'Only 25q/45ell or passthru supported (got {preprocess})')
+def preprocess(dataset, sample, preprocess: str = '25q-45ell') -> str:
+    if preprocess not in ['25q-45ell', 'passthru']:
+        raise NotImplementedError(f'Only 25q-45ell or passthru supported (got {preprocess})')
 
-    if preprocess == '25q/45ell':
+    if preprocess == '25q-45ell':
         script = 'preprocess.ngl'
         proc = subprocess.Popen(
                 ['ngless',
