@@ -8,6 +8,7 @@ def stream_gzips_to(files, fd):
         assert f.endswith('.gz')
         print(f'Unzipping {f}')
         subprocess.check_call(['zcat', f], stdout=fd)
+    fd.close()
 
 @contextmanager
 def preprocess(dataset, sample, preprocess: str = '25q/45ell') -> str:
@@ -40,7 +41,6 @@ def preprocess(dataset, sample, preprocess: str = '25q/45ell') -> str:
         t = threading.Thread(target=stream_gzips_to, args=(fs, write_f))
         t.start()
         yield read_f
-        write_f.close()
         read_f.close()
         t.join()
 
