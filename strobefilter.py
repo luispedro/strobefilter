@@ -136,7 +136,7 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
     if strategy not in ['strict', 'packed']:
         raise ValueError('Only strict and packed strategies are implemented')
     ip = strobealign.IndexParameters.from_read_length(100)
-    seen = np.load(rmers, mmap_mode='r')
+    seen = np.load(rmers)
     if strategy == 'packed':
         seen = seen.view(dtype=np.uint32).copy()
         seen.sort()
