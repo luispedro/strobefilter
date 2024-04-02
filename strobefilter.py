@@ -135,8 +135,7 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
         packed[seen] = 1
         del seen
     else:
-        seen32 = seen & 0xFFFFFFFF
-        seen32.sort()
+        seen32 = seen.view(dtype=np.uint32)[::2]
         pref = np.zeros(2**32, dtype=bool)
         pref[seen32] = True
         del seen32
