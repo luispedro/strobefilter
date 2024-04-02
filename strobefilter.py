@@ -4,38 +4,32 @@ from collections import namedtuple
 
 FilterResults = namedtuple('FilterResults', ['nr_unigenes_kept', 'strategy'])
 
-def merge_chunks(tempfiles, oname, merge_chunksize=8*1024*1024):
+def merge_sorted(tempfiles, merge_chunksize=256*1024*1024):
     import contextlib
     import numpy as np
     import os
     import mmap
-    with contextlib.ExitStack() as stack:
-        chunks = []
-        for f in tempfiles:
-            stack.enter_context(f := open(f, 'rb'))
-            chunks.append(mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ))
-        chunks = [np.frombuffer(ch, dtype=np.uint64) for ch in chunks]
+    chunks = [np.load(f, mmap_mode='r') for f in tempfiles]
 
-        rs = []
-        while chunks:
-            min_val = min(ch[min(merge_chunksize, len(ch)-1)] for ch in chunks)
-            next_chunks = []
-            to_merge = []
-            for ch in chunks:
-                p = 0
-                while p < len(ch) and ch[p] <= min_val:
-                    p += 1
-                to_merge.append(ch[:p])
-                if p < len(ch):
-                    next_chunks.append(ch[p:])
-            to_merge = np.concatenate(to_merge)
-            to_merge.sort()
-            rs.append(np.unique(to_merge))
-            chunks = next_chunks
-    with open(oname, 'wb') as f:
-        for r in rs:
-            f.write(r.data)
-    return oname
+    rs = []
+    while chunks:
+        min_val = min(ch[min(merge_chunksize, len(ch)-1)] for ch in chunks)
+        next_chunks = []
+        to_merge = []
+        for ch in chunks:
+            p = 0
+            while p + 1024 < len(ch) and ch[p+1024] < min_val:
+                p += 1024
+            while p < len(ch) and ch[p] <= min_val:
+                p += 1
+            to_merge.append(ch[:p])
+            if p < len(ch):
+                next_chunks.append(ch[p:])
+        to_merge = np.concatenate(to_merge)
+        to_merge.sort()
+        rs.append(np.unique(to_merge))
+        chunks = next_chunks
+    return np.concatenate(rs)
 
 def extract_strobes(ifile, ip):
     import tempfile
@@ -56,24 +50,21 @@ def extract_strobes(ifile, ip):
                 next_ix += 1
                 if next_ix == chunksize:
                     chunk.sort()
-                    u = np.unique(chunk)
-                    with open(f'{tmpdir}/chunk{len(tempfiles)}.raw', 'wb') as f:
-                        f.write(u.data)
-                    del u
-                    tempfiles.append(f'{tmpdir}/chunk{len(tempfiles)}.raw')
+                    tname = f'{tmpdir}/chunk{len(tempfiles)}.npy'
+                    np.save(tname, np.unique(chunk))
+                    tempfiles.append(tname)
                     print(f'Wrote chunk {len(tempfiles)} to disk {tempfiles[-1]}')
                     next_ix = 0
             if n_fq % 1_000_000 == 0 and n_fq < 10_000_000 or n_fq % 10_000_000 == 0:
                 print(f'{n_fq//1000/1000.}m reads')
         if next_ix > 0:
             chunk = np.unique(chunk[:next_ix])
-            with open(f'{tmpdir}/chunk{len(tempfiles)}.raw', 'wb') as f:
-                f.write(chunk.data)
-            tempfiles.append(f'{tmpdir}/chunk{len(tempfiles)}.raw')
+            tname = f'{tmpdir}/chunk{len(tempfiles)}.npy'
+            np.save(tname, chunk)
+            tempfiles.append(tname)
             print(f'Wrote chunk {len(tempfiles)} to disk {tempfiles[-1]}')
         print(f'Merging {len(tempfiles)} chunks')
-        merge_chunks(tempfiles, f'{tmpdir}/merged.raw')
-        r = np.fromfile(f'{tmpdir}/merged.raw', dtype=np.uint64)
+        r = merge_sorted(tempfiles)
         return (r, n_fq)
 
 def extract_strobes_to(dataset, sample, ofile, preproc='25q/45ell'):

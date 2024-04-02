@@ -64,6 +64,14 @@ def size_fastq(fastq, strobef : str):
     rmers = np.load(strobef, mmap_mode='r')
     return n, rmers.shape[0]
 
+@TaskGenerator
+def merge_partials(partials, oname):
+    from strobefilter import merge_sorted
+    import numpy as np
+    r = merge_sorted(partials)
+    np.save(oname, r)
+    return oname
+
 gmgc_v1 = get_gmgcv1()
 fastrobes = extract_fa_strobes(gmgc_v1)
 fastrobes_sub = subsample_strobed_fasta(fastrobes)
@@ -98,9 +106,9 @@ for dataset,ss,habitat in [
         (samples.DOG_STUDY, samples.DOG_SAMPLES, 'dog-gut'),
         (samples.TARA_STUDY, samples.TARA_SAMPLES, 'marine'),
         ]:
-    ps = []
-    for sample in ss:
-        for preproc in ['25q-45ell', 'passthru']:
+    for preproc in ['25q-45ell', 'passthru']:
+        ps = []
+        for sample in ss:
             rmers = extract_strobes_to(dataset,
                                     sample,
                                     path.join('preproc-data',
@@ -110,10 +118,20 @@ for dataset,ss,habitat in [
                                     preproc=preproc)
             ps.append(rmers[0])
             for st in ['strict']:
-                results[dataset, sample, st] = (strobefilter_count(rmers[0], fastrobes_sub, strategy=st),
+                results[dataset, preproc, sample, st] = (strobefilter_count(rmers[0], fastrobes_sub, strategy=st),
                                                 size_fasta_sub)
-                results[dataset+':'+habitat, sample, st] = (strobefilter_count(rmers[0], subcatalog[habitat], strategy=st),
+                results[f'{dataset}:{habitat}', preproc, sample, st] = (strobefilter_count(rmers[0], subcatalog[habitat], strategy=st),
                                                           nr_elements[habitat])
+        combined = merge_partials(ps,
+                       path.join('preproc-data',
+                                 'strobes',
+                                 dataset,
+                                 f'{dataset}-combined.{preproc}.npy'))
+        results[f'{dataset}-combined' , preproc, '0', st] = (strobefilter_count(combined, fastrobes_sub, strategy=st),
+                                        size_fasta_sub)
+        results[f'{dataset}-combined:{habitat}', preproc, sample, st] = (strobefilter_count(combined, subcatalog[habitat], strategy=st),
+                                                  nr_elements[habitat])
+
     #for st in ['strict']:
     #    results[dataset, st] = strobefilter_count(ps, fastrobes, strategy=st)
 
