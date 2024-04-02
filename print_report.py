@@ -6,7 +6,7 @@ def print_report(final, ofile):
 
     table = frac.groupby('study').describe().round(2).T.loc['strict']
 
-    study_counts =final.index.str.split('/').str[0].value_counts()
+    study_counts = final.index.str.split('/').str[0].value_counts()
     study_counts.index.name = 'study'
 
     with open(ofile, 'w') as f:
@@ -25,13 +25,22 @@ Dataset size (number of samples):
 
 {study_counts.to_markdown()}
 
-## Fraction (%) of elements kept after filtering
+## Fraction (%) of elements kept after filtering (with [NGLess](https://ngless.embl.de) preprocessing)
 
 ### Using a minimum of 1 matched hash per unigene (for it to be kept)
-{table.loc['min1'].drop('count').to_markdown()}
+{table.loc['25q-45ell', 'min1'].drop('count').to_markdown()}
 
 ### Using a minimum of 2 matched hashes per unigene (for it to be kept)
-{table.loc['min2'].drop('count').to_markdown()}
+{table.loc['25q-45ell', 'min2'].drop('count').to_markdown()}
+
+
+## Fraction (%) of elements kept after filtering (passthru, i.e., no FQ preprocessing)
+
+### Using a minimum of 1 matched hash per unigene (for it to be kept)
+{table.loc['passthru', 'min1'].drop('count').to_markdown()}
+
+### Using a minimum of 2 matched hashes per unigene (for it to be kept)
+{table.loc['passthru', 'min2'].drop('count').to_markdown()}
 
 
 Note that the _fraction_ of kept unigenes is counted, which will not correspond

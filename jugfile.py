@@ -85,12 +85,12 @@ results = {}
 def reorganize_results(results):
     import pandas as pd
     reordered = []
-    for (dataset,sample,strat),(vs, n_db) in results.items():
+    for (dataset,preproc,sample,strat),(vs, n_db) in results.items():
         for (n,crit) in vs:
-            reordered.append((dataset+'/'+sample, strat, crit, n, n_db))
-    reordered = pd.DataFrame(reordered, columns=['sample', 'strategy', 'criterion', 'nr_unigenes_kept', 'initial_db'])
+            reordered.append((dataset+'/'+sample, preproc, strat, crit, n, n_db))
+    reordered = pd.DataFrame(reordered, columns=['sample', 'preproc', 'strategy', 'criterion', 'nr_unigenes_kept', 'initial_db'])
     reordered.eval('frac_kept = nr_unigenes_kept/initial_db', inplace=True)
-    reordered = pd.pivot(reordered, index='sample', values='frac_kept', columns=['strategy', 'criterion'])
+    reordered = pd.pivot(reordered, index='sample', values='frac_kept', columns=['strategy', 'preproc', 'criterion'])
     return reordered
 
 for dataset,ss,habitat in [

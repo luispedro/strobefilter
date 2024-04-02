@@ -20,7 +20,7 @@ Dataset size (number of samples):
 | Zeller_CRC_2014           |      20 |
 | Zeller_CRC_2014:human-gut |      20 |
 
-## Fraction (%) of elements kept after filtering
+## Fraction (%) of elements kept after filtering (with [NGLess](https://ngless.embl.de) preprocessing)
 
 ### Using a minimum of 1 matched hash per unigene (for it to be kept)
 |      |   Coelho_dogs_2018 |   Coelho_dogs_2018:dog-gut |   TaraOceans |   TaraOceans:marine |   Zeller_CRC_2014 |   Zeller_CRC_2014:human-gut |
@@ -43,6 +43,31 @@ Dataset size (number of samples):
 | 50%  |               3.28 |                      61.05 |         7.95 |               24.88 |              5.08 |                       26.28 |
 | 75%  |               3.48 |                      66.3  |         9.94 |               30.84 |              5.58 |                       28.26 |
 | max  |               3.91 |                      73.91 |        11.87 |               38.78 |              6.15 |                       31.51 |
+
+
+## Fraction (%) of elements kept after filtering (passthru, i.e., no FQ preprocessing)
+
+### Using a minimum of 1 matched hash per unigene (for it to be kept)
+|      |   Coelho_dogs_2018 |   Coelho_dogs_2018:dog-gut |   TaraOceans |   TaraOceans:marine |   Zeller_CRC_2014 |   Zeller_CRC_2014:human-gut |
+|:-----|-------------------:|---------------------------:|-------------:|--------------------:|------------------:|----------------------------:|
+| mean |               4.31 |                      63.76 |         9.08 |               26.29 |              5.89 |                       28.29 |
+| std  |               0.42 |                       7.36 |         4.58 |               14.58 |              1.03 |                        4.77 |
+| min  |               3.73 |                      51.47 |         2.34 |                6.49 |              2.74 |                       13.17 |
+| 25%  |               3.99 |                      58.21 |         3.44 |                8.7  |              5.39 |                       26.21 |
+| 50%  |               4.27 |                      63.64 |        10.75 |               30.7  |              6.01 |                       29.09 |
+| 75%  |               4.55 |                      69.01 |        12.75 |               36.4  |              6.53 |                       30.83 |
+| max  |               5.06 |                      76.26 |        14.84 |               45.48 |              7.22 |                       34.37 |
+
+### Using a minimum of 2 matched hashes per unigene (for it to be kept)
+|      |   Coelho_dogs_2018 |   Coelho_dogs_2018:dog-gut |   TaraOceans |   TaraOceans:marine |   Zeller_CRC_2014 |   Zeller_CRC_2014:human-gut |
+|:-----|-------------------:|---------------------------:|-------------:|--------------------:|------------------:|----------------------------:|
+| mean |               3.39 |                      61.47 |         7.28 |               22.54 |              5.03 |                       25.85 |
+| std  |               0.34 |                       7.58 |         3.97 |               13.15 |              0.92 |                        4.63 |
+| min  |               2.94 |                      48.93 |         1.84 |                5.12 |              2.2  |                       11.3  |
+| 25%  |               3.12 |                      55.77 |         2.32 |                6.24 |              4.6  |                       23.84 |
+| 50%  |               3.35 |                      61.45 |         8.52 |               26.2  |              5.16 |                       26.63 |
+| 75%  |               3.55 |                      66.82 |        10.45 |               31.73 |              5.59 |                       28.34 |
+| max  |               4.01 |                      74.44 |        12.55 |               40.56 |              6.23 |                       31.82 |
 
 
 Note that the _fraction_ of kept unigenes is counted, which will not correspond
