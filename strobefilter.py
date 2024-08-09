@@ -5,10 +5,7 @@ from collections import namedtuple
 FilterResults = namedtuple('FilterResults', ['nr_unigenes_kept', 'strategy'])
 
 def merge_sorted(tempfiles, merge_chunksize=256*1024*1024):
-    import contextlib
     import numpy as np
-    import os
-    import mmap
     chunks = [np.load(f, mmap_mode='r') for f in tempfiles]
 
     rs = []
@@ -34,8 +31,6 @@ def merge_sorted(tempfiles, merge_chunksize=256*1024*1024):
 def extract_strobes(ifile, ip):
     import tempfile
     import numpy as np
-    import os
-    import gzip
     tempfiles = []
     next_ix = 0
     chunksize = 512_000_000
@@ -101,14 +96,15 @@ def read_strobed_fasta_chunk(fname):
                 if cur_p >= len(buf):
                     break
 
+
 def subsample_strobed_fasta(fn):
-    ofile = fn + '.subsampled'
     import random
     import numpy as np
     random.seed(123)
     sz = np.zeros(1, dtype=np.uint64)
     n = 0
     w = 0
+    ofile = fn + '.subsampled'
     with open(ofile, 'wb') as f:
         for ch in read_strobed_fasta_chunk(fn):
             n += 1
@@ -126,7 +122,6 @@ def strobefilter_count(rmers, preprocfa, strategy='strict'):
     import numpy as np
     if strategy not in ['strict', 'packed']:
         raise ValueError('Only strict and packed strategies are implemented')
-    ip = strobealign.IndexParameters.from_read_length(100)
     seen = np.load(rmers)
     if strategy == 'packed':
         seen = seen.view(dtype=np.uint32).copy()
