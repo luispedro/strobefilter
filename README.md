@@ -51,11 +51,6 @@ cd strobealign
 pip install .
 ```
 
-
-If available, [stly](https://github.com/luispedro/stly) is used to save memory;
-otherwise, the code will fall back on the standard Python `set` (which is
-actually faster).
-
 ### Data
 
 1. _Database_ GMGCv1 (from ([Coelho et al., 2022](https://www.nature.com/articles/s41586-021-04233-4)). This can be is downloaded by `jugfile.py`
